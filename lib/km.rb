@@ -14,6 +14,7 @@ class KM
   @log_dir   = '/tmp'
   @to_stderr = true
   @use_cron  = false
+  @use_delayed_job = false
 
   class << self
     class IdentError < StandardError; end
@@ -25,6 +26,7 @@ class KM
         :log_dir   => @log_dir,
         :to_stderr => @to_stderr,
         :use_cron  => @use_cron,
+        :use_delayed_job => @use_delayed_job,
         :env       => set_env,
       }
       options = default.merge(options)
@@ -34,9 +36,13 @@ class KM
         @host      = options[:host]
         @log_dir   = options[:log_dir]
         @use_cron  = options[:use_cron]
+        @use_delayed_job = options[:use_delayed_job]
         @to_stderr = options[:to_stderr]
         @env       = options[:env]
         log_dir_writable?
+        if @use_cron && @use_delayed_job
+          raise "Cannot set both use_cron and use_delayed_job to true"
+        end
       rescue Exception => e
         log_error(e)
       end
@@ -197,13 +203,19 @@ class KM
       query = '/' + type + '?' + query_arr.join('&')
       if @use_cron
         log_query(query)
+      elsif @use_delayed_job
+        self.delay.send_or_log_query(query)
       else
-        begin
-          send_query(query)
-        rescue Exception => e
-          log_query(query)
-          log_error(e)
-        end
+        send_or_log_query(query)
+      end
+    end
+
+    def send_or_log_query(line)
+      begin
+        send_query(line)
+      rescue Exception => e
+        log_query(line)
+        log_error(e)
       end
     end
 

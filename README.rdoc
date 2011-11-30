@@ -1,3 +1,7 @@
+= Fork information
+
+This fork adds support for delayed_job via the use_delayed_job option.
+
 = Documentation
 
 We are hosting our documentation for our Ruby API here: http://support.kissmetrics.com/apis/ruby
